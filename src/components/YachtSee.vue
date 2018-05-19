@@ -69,6 +69,23 @@
       </div>
     </div>
 
+    <b-modal ref="diceTypeModal" title="YachtSee" centered>
+      <p class="my-1 text-center">
+        You scored {{ dice_value_score }} points in the left column,
+        so you get a bonus!
+      </p>
+
+      <p class="my-1 text-center">
+        <strong>+35 points!</strong>
+      </p>
+
+      <div slot="modal-footer" class="w-100 text-center">
+        <button type="button" class="btn btn-primary" @click="closeFiveModals()">
+          OK
+        </button>
+      </div>
+    </b-modal>
+
     <b-modal ref="fiveOfAKindModal1" title="YachtSee" centered>
       <p class="my-1 text-center">
         You rolled a five of a kind!
@@ -174,6 +191,7 @@ export default {
       rolling: false,
       dice_rolling: [],
       scores: {},
+      dice_value_score: 0,
       score_types: {
         left: {
           ones: 'Ones',
@@ -211,6 +229,7 @@ export default {
       this.rolling = false;
       this.dice = ['?', '?', '?', '?', '?'];
       this.dice_rolling = [0, 0, 0, 0, 0];
+      this.dice_value_score = 0;
 
       this.scores = { total: 0 };
       const scoresTypes = Object.keys(this.score_types.left)
@@ -235,6 +254,10 @@ export default {
       this.$refs.completeModal.show();
     },
     closeFiveModals() {
+      if (this.$refs.diceTypeModal) {
+        this.$refs.diceTypeModal.hide();
+      }
+
       if (this.$refs.fiveOfAKindModal1) {
         this.$refs.fiveOfAKindModal1.hide();
       }
@@ -321,16 +344,41 @@ export default {
         count[this.dice[index]] += 1;
       }
 
-      if (count.indexOf(value) !== -1) {
-        return value * count.indexOf(value);
+      let found = false;
+      switch (value) {
+        case 3:
+          // Check 3
+          if (count.indexOf(3) !== -1) {
+            found = true;
+          }
+
+          // Check 4
+          if (count.indexOf(4) !== -1) {
+            found = true;
+          }
+
+          // Check 5
+          if (count.indexOf(5) !== -1) {
+            found = true;
+          }
+
+          break;
+        case 4:
+          // Check 4
+          if (count.indexOf(4) !== -1) {
+            found = true;
+          }
+
+          // Check 5
+          if (count.indexOf(5) !== -1) {
+            found = true;
+          }
+
+          break;
       }
 
-      if (count.indexOf(4) !== -1) {
-        return value * count.indexOf(4);
-      }
-
-      if (count.indexOf(5) !== -1) {
-        return value * count.indexOf(5);
+      if (found) {
+        return this.sumChance();
       }
 
       return 0;
@@ -435,6 +483,19 @@ export default {
       const score = this.calcScore(type);
       this.scores.total += score;
       this.scores[type] = score;
+
+      if (this.dice_value_score === 0) {
+        ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'].forEach((singleType) => {
+          this.dice_value_score += this.scores[singleType];
+        });
+
+        if (this.dice_value_score >= 63) {
+          this.$refs.diceTypeModal.show();
+          this.scores.total += 35;
+        } else {
+          this.dice_value_score = 0;
+        }
+      }
 
       this.startRound();
     },
